@@ -19,6 +19,12 @@ export const constants = basicFind("ThemeColorMap");
 export const moment = basicFind("isMoment");
 
 if (window.__vendetta_loader?.features.unfreezeColorConstants) {
+    // returns a 0xRRGGBBAA 32bit int
+    function normalizeColor(color: string): number {
+        const processed = Number(ReactNative.processColor(color));
+        return ((processed & 0x00ffffff) << 8 | processed >>> 24) >>> 0;
+    }
+
     const { RawColor, SemanticColor, SemanticColorsByThemeTable } = basicFind("SemanticColorsByThemeTable");
     const mapToIndex = (key: string) => SemanticColor[key] ? Number(SemanticColor[key]) >>> 0 : -1;
 
@@ -31,9 +37,11 @@ if (window.__vendetta_loader?.features.unfreezeColorConstants) {
         if (index === -1) continue;
 
         for (let i = 0; i < newThemeColorMap[key].length; i++) {
-            SemanticColorsByThemeTable[i][index] = newThemeColorMap[key][i];
-            // not required, but overwrite it anyway
-            constants.ThemeColorMap[key][i] = newThemeColorMap[key][i];
+            const isString = typeof SemanticColorsByThemeTable[i][index] === "string";
+            const newValue = !isString ? normalizeColor(newThemeColorMap[key][i]!!) : newThemeColorMap[key][i];
+
+            SemanticColorsByThemeTable[i][index] = newValue;
+            constants.ThemeColorMap[key][i] = newThemeColorMap[key][i]; // not required, but overwrite it anyway
         }
     }
 
@@ -43,7 +51,8 @@ if (window.__vendetta_loader?.features.unfreezeColorConstants) {
             constants.Colors[key] = newRawColors[key];
         }
         if (RawColor[key]) {
-            RawColor[key] = newRawColors[key];
+            const isString = typeof RawColor[key] === "string";
+            RawColor[key] = !isString ? normalizeColor(newRawColors[key]) : newRawColors[key];
         }
     }
 
