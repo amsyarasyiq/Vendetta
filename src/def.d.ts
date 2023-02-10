@@ -191,7 +191,7 @@ interface DCDFileManager {
      */
     readFile(path: string, encoding: "base64" | "utf8"): Promise<string>;
     /**
-     * Beware! This function has differing functionality on IOS and Android.
+     * Beware! This function has differing functionality on iOS and Android.
      * @param storageDir Either `cache` or `documents`.
      * @param path Path in `storageDir`, parents are recursively created.
      * @param data The data to write to the file
@@ -287,6 +287,10 @@ interface VendettaObject {
             navigation: PropIntellisense<"pushLazy">;
             navigationStack: PropIntellisense<"createStackNavigator">;
             NavigationNative: PropIntellisense<"NavigationContainer">;
+            // You may ask: "Why not just install Flux's types?"
+            // Answer: Discord have a (presumably proprietary) fork. It's wildly different.
+            Flux: PropIntellisense<"connectStores">;
+            FluxDispatcher: PropIntellisense<"_currentDispatchActionType">;
             React: typeof _React;
             ReactNative: typeof _RN;
         };
@@ -311,7 +315,7 @@ interface VendettaObject {
         components: {
             Forms: PropIntellisense<"Form" | "FormSection">;
             General: PropIntellisense<"Button" | "Text" | "View">;
-            Search: _React.Component;
+            Search: _React.ComponentType;
         }
         toasts: {
             showToast: (content: string, asset: number) => void;
@@ -327,6 +331,7 @@ interface VendettaObject {
     plugins: {
         plugins: Indexable<Plugin>;
         fetchPlugin: (id: string, enabled: boolean) => void;
+        installPlugin: (id: string, enabled: boolean) => void;
         evalPlugin: (plugin: Plugin) => void;
         stopPlugin: (id: string, disable: boolean) => void;
         removePlugin: (id: string) => void;
