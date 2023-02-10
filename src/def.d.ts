@@ -217,13 +217,13 @@ type Indexable<Type> = { [index: string]: Type }
 type EmitterEvent = "SET" | "GET" | "DEL";
 
 interface EmitterListenerData {
-	path: string[];
-	value?: any;
+    path: string[];
+    value?: any;
 }
 
 type EmitterListener = (
-	event: EmitterEvent,
-	data: EmitterListenerData | any
+    event: EmitterEvent,
+    data: EmitterListenerData | any
 ) => any;
 
 type EmitterListeners = Indexable<Set<EmitterListener>>;
@@ -256,7 +256,8 @@ interface LoaderIdentity {
         devtools?: {
             prop: string;
             version: string;
-        }
+        },
+        unfreezeColorConstants?: boolean;
     }
 }
 
