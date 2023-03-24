@@ -30,7 +30,7 @@ export async function fetchPlugin(id: string) {
         try {
             // by polymanifest spec, plugins should always specify their main file, but just in case
             pluginJs = await (await safeFetch(id + (pluginManifest.main || "index.js"), { cache: "no-store" })).text();
-        } catch {} // Empty catch, checked below
+        } catch { } // Empty catch, checked below
     }
 
     if (!pluginJs && !existingPlugin) throw new Error(`Failed to fetch JS for ${id}`);
@@ -79,12 +79,12 @@ export async function startPlugin(id: string) {
         loadedPlugins[id] = pluginRet;
         pluginRet.onLoad?.();
         plugin.enabled = true;
-    } catch(e) {
+    } catch (e) {
         logger.error(`Plugin ${plugin.id} errored whilst loading, and will be unloaded`, e);
 
         try {
             loadedPlugins[plugin.id]?.onUnload?.();
-        } catch(e2) {
+        } catch (e2) {
             logger.error(`Plugin ${plugin.id} errored whilst unloading`, e2);
         }
 
@@ -102,7 +102,7 @@ export function stopPlugin(id: string, disable = true) {
 
     try {
         pluginRet.onUnload?.();
-    } catch(e) {
+    } catch (e) {
         logger.error(`Plugin ${plugin.id} errored whilst unloading`, e);
     }
 
@@ -121,12 +121,11 @@ export async function initPlugins() {
     await awaitSyncWrapper(plugins);
     const allIds = Object.keys(plugins);
 
-    // Wait for every plugin that is enabled and allowed to update to be fetched...
-    await Promise.allSettled(allIds.filter(pl => plugins[pl].enabled && plugins[pl].update).map(pl => fetchPlugin(pl)));
-    // ...then start ALL enabled plugins, regardless of whether they are allowed to update.
+    // Fetch all plugins that are allowed to update, without waiting for them to finish doing so.
+    allIds.forEach(pl => plugins[pl].update && fetchPlugin(pl).catch(e => logger.error(`Failed to update plugin ${pl}`, e)));
+
+    // Start ALL enabled plugins, regardless of whether they are allowed to update.
     await Promise.allSettled(allIds.filter(pl => plugins[pl].enabled).map(pl => startPlugin(pl)));
-    // After this, fetch all disabled plugins that are allowed to update, without waiting for them to finish doing so.
-    allIds.filter(pl => !plugins[pl].enabled && plugins[pl].update).forEach(pl => fetchPlugin(pl));
 
     return stopAllPlugins;
 }
