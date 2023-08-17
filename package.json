@@ -3,7 +3,8 @@
     "version": "1.0.0",
     "description": "A mod for Discord's mobile apps.",
     "scripts": {
-        "build": "node build.mjs"
+        "build": "node build.mjs --release",
+        "deploy:root": "node build.mjs --deploy-root"
     },
     "keywords": [
         "discord",

@@ -1,59 +1,75 @@
-import { build } from "esbuild";
-import alias from "esbuild-plugin-alias";
 import swc from "@swc/core";
-import { promisify } from "util";
-import { exec as _exec } from "child_process";
-import fs from "fs/promises";
-import path from "path";
-const exec = promisify(_exec);
+import { execSync } from "child_process";
+import esbuild from "esbuild";
+import { argv } from "process";
 
-const tsconfig = JSON.parse(await fs.readFile("./tsconfig.json"));
-const aliases = Object.fromEntries(Object.entries(tsconfig.compilerOptions.paths).map(([alias, [target]]) => [alias, path.resolve(target)]));
-const commit = (await exec("git rev-parse HEAD")).stdout.trim().substring(0, 7) || "custom";
+const flags = argv.slice(2).filter(arg => arg.startsWith("--")).map(arg => arg.slice(2));
+const isDev = !flags.includes("release");
 
-try {
-    await build({
-        entryPoints: ["./src/entry.ts"],
-        outfile: "./dist/vendetta.js",
-        minify: true,
-        bundle: true,
-        format: "iife",
-        target: "esnext",
-        plugins: [
-            {
-                name: "swc",
-                setup: (build) => {
-                    build.onLoad({ filter: /\.[jt]sx?/ }, async (args) => {
-                        // This actually works for dependencies as well!!
-                        const result = await swc.transformFile(args.path, {
-                            jsc: {
-                                externalHelpers: true,
-                            },
-                            env: {
-                                targets: "defaults",
-                                include: [
-                                    "transform-classes",
-                                    "transform-arrow-functions",
-                                ],
-                            },
-                        });
-                        return { contents: result.code };
-                    });
+const commitHash = execSync("git rev-parse --short HEAD").toString().trim();
+console.log(`Building with commit hash ${commitHash}, isDev=${isDev}`);
+
+const buildOutput = "dist/pyondetta.js";
+
+/** @type {import("esbuild").Plugin}  */
+const swcPlugin = {
+    name: "swc",
+    setup(build) {
+        build.onLoad({ filter: /\.[jt]sx?/ }, async args => {
+            const result = await swc.transformFile(args.path, {
+                jsc: {
+                    externalHelpers: true,
                 },
-            },
-            alias(aliases),
-        ],
-        define: {
-            __vendettaVersion: `"${commit}"`,
-        },
-        footer: {
-            js: "//# sourceURL=Vendetta",
-        },
-        legalComments: "none",
-    });
+                env: {
+                    targets: "defaults",
+                    include: [
+                        "transform-classes",
+                        "transform-arrow-functions",
+                    ],
+                },
+            });
+            return { contents: result.code };
+        });
+    }
+};
 
-    console.log("Build successful!");
-} catch (e) {
-    console.error("Build failed...", e);
-    process.exit(1);
+await esbuild.build({
+    entryPoints: ["src/entry.ts"],
+    bundle: true,
+    minify: !isDev,
+    format: "iife",
+    target: "esnext",
+    outfile: buildOutput,
+    footer: {
+        js: "//# sourceURL=pyondetta",
+    },
+    define: {
+        __vendettaIsDev: JSON.stringify(isDev),
+        __vendettaVersion: JSON.stringify(commitHash)
+    },
+    legalComments: "none",
+    alias: {
+        "@/*": "./src/*",
+        "@types": "./src/def.d.ts"
+    },
+    plugins: [
+        swcPlugin
+    ]
+});
+
+console.log("Build complete!");
+
+if (flags.includes("deploy-root")) {
+    console.log("Deploying to device with root...");
+
+    // Hardcode stuff because I'm lazy :trollface:
+    const packageName = "com.discord";
+
+    // Make sure to configure the loader to load from an invalid URL so it uses the cache
+    // This is still an issue because the cache is cleared intervally so we need to make our own loader
+    execSync("adb wait-for-device root");
+    execSync(`adb shell am force-stop ${packageName}`);
+    // execSync(`adb push ${buildOutput} sdcard/Documents/pyoncord/pyoncord/cache/pyoncord.js`);
+    execSync(`adb push ${buildOutput} /data/data/${packageName}/files/pyoncord/cache/pyoncord.js`);
+    execSync(`adb shell am start ${packageName}/com.discord.main.MainActivity`);
 }
