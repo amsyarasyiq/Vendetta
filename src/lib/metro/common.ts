@@ -1,12 +1,12 @@
 import { DiscordStyleSheet } from "@types";
-import { find, findByProps } from "@metro/filters";
+import { findByCache, findByProps } from "@metro/filters";
 
 // Discord
 export const constants = findByProps("Fonts", "Permissions");
 export const channels = findByProps("getVoiceChannelId");
 export const i18n = findByProps("Messages");
 export const url = findByProps("openURL", "openDeeplink");
-export const toasts = find(m => m.open && m.close && !m.startDrag && !m.init && !m.openReplay && !m.setAlwaysOnTop);
+export const toasts = findByCache(c => c.props?.has("open") && c.props?.has("close") && c.props?.size === 2);
 export const stylesheet = findByProps("createThemedStyleSheet") as DiscordStyleSheet;
 export const clipboard = findByProps("setString", "getString", "hasString") as typeof import("@react-native-clipboard/clipboard").default;
 export const assets = findByProps("registerAsset");

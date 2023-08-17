@@ -33,10 +33,23 @@ interface SearchProps {
     style?: _RN.TextStyle;
 }
 
+interface ModuleCache<T = Set<string>> {
+    default?: ModuleCache;
+    props?: T;
+    protoProps?: T;
+    classProtoProps?: T;
+    compDefaultProps?: T;
+    name?: string;
+    memoName?: string;
+    forwardRefName?: string;
+    displayName?: string;
+    fluxStoreName?: string;
+}
+
 // Helper types for API functions
-type PropIntellisense<P extends string | symbol> = Record<P, any> & Record<PropertyKey, any>;
-type PropsFinder = <T extends string | symbol>(...props: T[]) => PropIntellisense<T>;
-type PropsFinderAll = <T extends string | symbol>(...props: T[]) => PropIntellisense<T>[];
+type PropIntellisense<P extends string> = Record<P, any> & Record<PropertyKey, any>;
+type PropsFinder = <T extends string>(...props: T[]) => PropIntellisense<T>;
+type PropsFinderAll = <T extends string>(...props: T[]) => PropIntellisense<T>[];
 
 type LoggerFunction = (...messages: any[]) => void;
 interface Logger {

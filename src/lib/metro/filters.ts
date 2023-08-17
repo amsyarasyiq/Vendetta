@@ -1,81 +1,74 @@
-import { MetroModules, PropsFinder, PropsFinderAll } from "@types";
+import { ModuleCache, PropsFinder, PropsFinderAll } from "@types";
 
 // Metro require
-declare const __r: (moduleId: number) => any;
+declare const __r: (moduleId: string | number) => any;
 
-// Internal Metro error reporting logic
-const originalHandler = window.ErrorUtils.getGlobalHandler();
-
-// Function to blacklist a module, preventing it from being searched again
-const blacklist = (id: number) => Object.defineProperty(window.modules, id, {
-    value: window.modules[id],
-    enumerable: false,
-    configurable: true,
-    writable: true
-});
-
-// Blacklist any "bad-actor" modules, e.g. the dreaded null proxy, the window itself, or undefined modules
-for (const key in window.modules) {
-    const id = Number(key);
-    const module = window.modules[id]?.publicModule?.exports;
-
-    if (!module || module === window || module["proxygone"] === null) {
-        blacklist(id);
-        continue;
-    }
-}
-
-// Function to filter through modules
-const filterModules = (modules: MetroModules, single = false) => (filter: (m: any) => boolean) => {
+const filterModules = (single = false) => (filter: (c: ModuleCache) => any) => {
     const found = [];
 
-    for (const key in modules) {
-        const id = Number(key);
-        const module = modules[id]?.publicModule?.exports;
+    for (const key in modules) if (modules[key].__pyonCache) {
+        const cache = modules[key].__pyonCache as ModuleCache;
 
-        // HACK: Override the function used to report fatal JavaScript errors (that crash the app) to prevent module-requiring side effects
-        // Credit to @pylixonly (492949202121261067) for the initial version of this fix
-        if (!modules[id].isInitialized) try {
-            window.ErrorUtils.setGlobalHandler(() => {});
-            __r(id);
-            window.ErrorUtils.setGlobalHandler(originalHandler);
-        } catch {}
-
-        if (!module) {
-            blacklist(id);
-            continue;
+        if (cache.default && filter(cache.default)) {
+            if (single) return __r(key).default;
+            found.push(__r(key).default);
         }
 
-        if (module.default && module.__esModule && filter(module.default)) {
-            if (single) return module.default;
-            found.push(module.default);
-        }
-
-        if (filter(module)) {
-            if (single) return module;
-            else found.push(module);
+        if (filter(cache)) {
+            if (single) return __r(key);
+            found.push(__r(key));
         }
     }
 
     if (!single) return found;
 }
 
+export const findByCache = filterModules(true);
+export const findByCacheAll = filterModules();
+
 export const modules = window.modules;
-export const find = filterModules(modules, true);
-export const findAll = filterModules(modules);
 
-const propsFilter = (props: (string | symbol)[]) => (m: any) => props.every((p) => m[p] !== undefined);
-const nameFilter = (name: string, defaultExp: boolean) => (defaultExp ? (m: any) => m?.name === name : (m: any) => m?.default?.name === name);
-const dNameFilter = (displayName: string, defaultExp: boolean) => (defaultExp ? (m: any) => m?.displayName === displayName : (m: any) => m?.default?.displayName === displayName);
-const tNameFilter = (typeName: string, defaultExp: boolean) => (defaultExp ? (m: any) => m?.type?.name === typeName : (m: any) => m?.default?.type?.name === typeName);
-const storeFilter = (name: string) => (m: any) => m.getName && m.getName.length === 0 && m.getName() === name;
+const propsFilter = (props: string[]) => (c: ModuleCache) => props.every(p => c.props?.has(p) || c.protoProps?.has(p));
+const nameFilter = (name: string, defaultExp = true) => defaultExp ? (c: ModuleCache) => c.name === name : (cache: ModuleCache) => cache.default?.name === name;
+const dNameFilter = (displayName: string, defaultExp: boolean) => defaultExp ? (c: ModuleCache) => c.displayName === displayName : (c: ModuleCache) => c.default?.displayName === displayName;
+const tNameFilter = (typeName: string, defaultExp: boolean) => defaultExp ? (c: ModuleCache) => c.memoName === typeName : (c: ModuleCache) => c.default?.memoName === typeName;
+const storeFilter = (name: string) => (c: ModuleCache) => c.fluxStoreName === name;
 
-export const findByProps: PropsFinder = (...props) => find(propsFilter(props));
-export const findByPropsAll: PropsFinderAll = (...props) => findAll(propsFilter(props));
-export const findByName = (name: string, defaultExp = true) => find(nameFilter(name, defaultExp));
-export const findByNameAll = (name: string, defaultExp = true) => findAll(nameFilter(name, defaultExp));
-export const findByDisplayName = (displayName: string, defaultExp = true) => find(dNameFilter(displayName, defaultExp));
-export const findByDisplayNameAll = (displayName: string, defaultExp = true) => findAll(dNameFilter(displayName, defaultExp));
-export const findByTypeName = (typeName: string, defaultExp = true) => find(tNameFilter(typeName, defaultExp));
-export const findByTypeNameAll = (typeName: string, defaultExp = true) => findAll(tNameFilter(typeName, defaultExp));
-export const findByStoreName = (name: string) => find(storeFilter(name));
+export const findByProps: PropsFinder = (...props) => findByCache(propsFilter(props));
+export const findByPropsAll: PropsFinderAll = (...props) => findByCacheAll(propsFilter(props));
+export const findByName = (name: string, defaultExp = true) => findByCache(nameFilter(name, defaultExp));
+export const findByNameAll = (name: string, defaultExp = true) => findByCacheAll(nameFilter(name, defaultExp));
+export const findByDisplayName = (displayName: string, defaultExp = true) => findByCache(dNameFilter(displayName, defaultExp));
+export const findByDisplayNameAll = (displayName: string, defaultExp = true) => findByCacheAll(dNameFilter(displayName, defaultExp));
+export const findByTypeName = (typeName: string, defaultExp = true) => findByCache(tNameFilter(typeName, defaultExp));
+export const findByTypeNameAll = (typeName: string, defaultExp = true) => findByCacheAll(tNameFilter(typeName, defaultExp));
+export const findByStoreName = (name: string) => findByCache(storeFilter(name));
+
+type FnFilter = (m: any) => boolean;
+
+const findFilter = (filter: FnFilter) => (c: ModuleCache) => {
+    const handler: ProxyHandler<any> = {
+        get: (_, prop: string) => {
+            if (prop === "default" && c.default && (c = c.default)) return new Proxy({}, handler);
+            if (prop === "render") return { name: c.forwardRefName };
+            if (prop === "type") return { name: c.memoName };
+            if (c.props?.has(prop) || c.protoProps?.has(prop)) return true;
+        },
+        ownKeys: () => c.props ? [...c.props] : [],
+        getOwnPropertyDescriptor() {
+            return { enumerable: true, configurable: true };
+        }
+    };
+
+    return filter(new Proxy({}, handler))
+}
+
+/**
+ * @deprecated Do not use! This exists merely to support Vendetta plugins!
+ */
+export const find = (filter: FnFilter) => findByCache(findFilter(filter));
+
+/**
+ * @deprecated Do not use! This exists merely to support Vendetta plugins!
+ */
+export const findAll = (filter: FnFilter) => findByCacheAll(findFilter(filter));
