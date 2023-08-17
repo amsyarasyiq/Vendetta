@@ -1,5 +1,3 @@
-// import { AssetManager } from "./src/metro/common";
-
 import { ModuleCache } from "@/def";
 
 const MMKVManager = window.nativeModuleProxy.MMKVManager as any;
@@ -133,11 +131,12 @@ function createModuleCache(id: string) {
 async function cacheAndRestart() {
     console.log("Cache is unavailable or is outdated, caching and restarting!");
 
-    const c = { version: currentVersion, assets: {} };
+    const c = { version: currentVersion, assets: {} as any };
 
-    // AssetManager.registerAsset = (asset: { name: string | number; }) => {
-    //     c.assets[asset.name] = asset;
-    // };
+    const assetManager = Object.values(window.modules).find(m => m.publicModule.exports.registerAsset);
+    assetManager.publicModule.exports.registerAsset = (asset: { name: string | number }) => {
+        c.assets[asset.name] = asset;
+    };
 
     for (const key in window.modules) {
         const cache = createModuleCache(key);
@@ -172,15 +171,15 @@ export default () => loadCacheOrRestart().then(cache => {
     for (const key in window.modules) if (cache[key]) {
         window.modules[key].__pyonCache = cache[key];
 
-        const doIt = (c: any) => {
+        const makeArrayToSets = (c: any) => {
             for (const k in c) {
                 c[k] instanceof Array && (c[k] = new Set(c[k]));
             }
 
-            if (c.default) doIt(c.default);
+            if (c.default) makeArrayToSets(c.default);
         };
 
-        doIt(cache[key]);
+        makeArrayToSets(cache[key]);
     }
 
     return cache;

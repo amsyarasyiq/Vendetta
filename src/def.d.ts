@@ -72,7 +72,6 @@ interface FindInTreeOptions {
 
 interface Asset {
     name: string;
-    id: number;
 }
 
 export enum ButtonColors {
