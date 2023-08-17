@@ -1,4 +1,5 @@
 import { ModuleCache, PropsFinder, PropsFinderAll } from "@types";
+import { commonName } from "../caching";
 
 // Metro require
 declare const __r: (moduleId: string | number) => any;
@@ -28,7 +29,7 @@ export const findByCacheAll = filterModules();
 
 export const modules = window.modules;
 
-const propsFilter = (props: string[]) => (c: ModuleCache) => props.every(p => c.props?.has(p) || c.protoProps?.has(p));
+const propsFilter = (props: string[]) => (c: ModuleCache) => props.every(p => commonName.has(p) ? true : c.props?.has(p) || c.protoProps?.has(p));
 const nameFilter = (name: string, defaultExp = true) => defaultExp ? (c: ModuleCache) => c.name === name : (cache: ModuleCache) => cache.default?.name === name;
 const dNameFilter = (displayName: string, defaultExp: boolean) => defaultExp ? (c: ModuleCache) => c.displayName === displayName : (c: ModuleCache) => c.default?.displayName === displayName;
 const tNameFilter = (typeName: string, defaultExp: boolean) => defaultExp ? (c: ModuleCache) => c.memoName === typeName : (c: ModuleCache) => c.default?.memoName === typeName;

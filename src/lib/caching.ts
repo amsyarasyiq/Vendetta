@@ -14,7 +14,7 @@ const metroRequire = (id: any) => {
 
 const currentVersion = window.nativeModuleProxy.RTNClientInfoManager.Build;
 
-const commonName = new Set([
+export const commonName = new Set([
     "__esModule",
     "constructor",
     "default",

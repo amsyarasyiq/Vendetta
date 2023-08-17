@@ -17,7 +17,7 @@ export default function AssetBrowser() {
                     placeholder="Search"
                 />
                 <RN.FlatList
-                    data={Object.values(all).filter(a => a.name.includes(search) || a.id.toString() === search)}
+                    data={Object.values(all).filter(a => a.name.includes(search))}
                     renderItem={({ item }) => <AssetDisplay asset={item} />}
                     ItemSeparatorComponent={FormDivider}
                     keyExtractor={item => item.name}

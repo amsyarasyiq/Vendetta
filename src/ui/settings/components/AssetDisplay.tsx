@@ -9,10 +9,12 @@ interface AssetDisplayProps { asset: Asset }
 const { FormRow } = Forms;
 
 export default function AssetDisplay({ asset }: AssetDisplayProps) {
+    const id = getAssetIDByName(asset.name);
+
     return (
         <FormRow
-            label={`${asset.name} - ${asset.id}`}
-            trailing={<RN.Image source={asset.id} style={{ width: 32, height: 32 }} />}
+            label={`${asset.name} - ${id}`}
+            trailing={<RN.Image source={id} style={{ width: 32, height: 32 }} />}
             onPress={() => {
                 clipboard.setString(asset.name);
                 showToast("Copied asset name to clipboard.", getAssetIDByName("toast_copy_link"));
