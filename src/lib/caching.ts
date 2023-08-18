@@ -2,7 +2,7 @@ import { ModuleCache } from "@/def";
 
 const MMKVManager = window.nativeModuleProxy.MMKVManager as any;
 
-window.ErrorUtils.setGlobalHandler(() => {});
+window.ErrorUtils.setGlobalHandler(() => { });
 
 const metroRequire = (id: any) => {
     try {
@@ -59,11 +59,12 @@ function __cache(obj: any, cache: ModuleCache<string[]>, isDefault = false) {
         cache.protoProps = Object.getOwnPropertyNames(obj.__proto__);
     }
 
+    if (obj.displayName) cache.displayName = obj.displayName;
+    if (obj.defaultProps) cache.compDefaultProps = Object.getOwnPropertyNames(obj.defaultProps);
+
     if (typeof obj === "function") {
         if (isNameValid(obj.name)) cache.name = obj.name;
         if (obj.prototype) cache.classProtoProps = Object.getOwnPropertyNames(obj.prototype);
-        if (obj.displayName) cache.displayName = obj.displayName;
-        if (obj.defaultProps) cache.compDefaultProps = Object.getOwnPropertyNames(obj.defaultProps);
     }
 
     if (obj.$$typeof) {
@@ -148,9 +149,10 @@ async function cacheAndRestart() {
     MMKVManager.setItem("pyonModuleCache", JSON.stringify(c));
 
     // setTimeout or setInterval isn't working!!
-    // So, I can't guarantee that our cache is properly set (assuming setItem is actually async)
+    // So, I can't guarantee that our cache is properly set
     setImmediate(window.nativeModuleProxy.BundleUpdaterManager.reload);
 }
+
 
 async function loadCacheOrRestart() {
     const loadedCache = await MMKVManager.getItem("pyonModuleCache");
@@ -168,17 +170,16 @@ async function loadCacheOrRestart() {
 export default () => loadCacheOrRestart().then(cache => {
     window.__pyonModuleCache = cache;
 
+    const makeArrayToSets = (c: any) => {
+        for (const k in c) {
+            c[k] instanceof Array && (c[k] = new Set(c[k]));
+        }
+
+        if (c.default) makeArrayToSets(c.default);
+    };
+
     for (const key in window.modules) if (cache[key]) {
         window.modules[key].__pyonCache = cache[key];
-
-        const makeArrayToSets = (c: any) => {
-            for (const k in c) {
-                c[k] instanceof Array && (c[k] = new Set(c[k]));
-            }
-
-            if (c.default) makeArrayToSets(c.default);
-        };
-
         makeArrayToSets(cache[key]);
     }
 
