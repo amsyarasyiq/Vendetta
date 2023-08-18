@@ -3,7 +3,8 @@ import { findByName } from "@metro/filters";
 import { after } from "@lib/patcher";
 import { findInReactTree } from "@lib/utils";
 import { getPanelsScreens } from "@ui/settings/data";
-import SettingsSection from "@ui/settings/components/SettingsSection";
+
+const SettingsSection = React.lazy(() => import("@ui/settings/components/SettingsSection"));
 
 const screensModule = findByName("getScreens", false);
 const settingsModule = findByName("UserSettingsOverviewWrapper", false);

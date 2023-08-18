@@ -6,7 +6,7 @@ import _moment from "moment";
 import _chroma from "chroma-js";
 import _lodash from "lodash";
 
-type MetroModules = { [id: number]: any };
+type MetroModules = { [id: string]: any };
 
 // Component types
 interface SummaryProps {

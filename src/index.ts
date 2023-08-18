@@ -11,6 +11,8 @@ import logger from "@lib/logger";
 import windowObject from "@lib/windowObject";
 
 export default async () => {
+    console.log(`Vendetta bundle loaded in ${performance.now() - window.__pyon_init_now}ms`);
+
     // Load everything in parallel
     const unloads = await Promise.all([
         patchLogHook(),

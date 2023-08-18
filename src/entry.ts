@@ -15,12 +15,12 @@ Object.defineProperty = function defineProperty(...args) {
     if (args[2].configurable == null && args[2].writable !== false) {
         args[2].configurable = true
     }
-    
+
     return oldDefineProperty.apply(this, args)
 };
 
 (async () => {
-    const initNow = performance.now();
+    const initNow = window.__pyon_init_now = performance.now();
     await (await import("./lib/caching")).default();
 
     await import(".").then((m) => m.default()).catch((e) => {

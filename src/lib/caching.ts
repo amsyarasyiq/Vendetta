@@ -144,15 +144,14 @@ async function cacheAndRestart() {
         // @ts-ignore - AHHHHHHHHHHHHHH
         if (cache != null) c[key] = cache;
     }
-
+    
     MMKVManager.removeItem("pyonModuleCache");
     MMKVManager.setItem("pyonModuleCache", JSON.stringify(c));
 
-    // setTimeout or setInterval isn't working!!
-    // So, I can't guarantee that our cache is properly set
-    setImmediate(window.nativeModuleProxy.BundleUpdaterManager.reload);
+    // getItem here so we delay the reload()
+    await MMKVManager.getItem("pyonModuleCache");
+    window.nativeModuleProxy.BundleUpdaterManager.reload();
 }
-
 
 async function loadCacheOrRestart() {
     const loadedCache = await MMKVManager.getItem("pyonModuleCache");
