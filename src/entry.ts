@@ -20,8 +20,13 @@ Object.defineProperty = function defineProperty(...args) {
 };
 
 (async () => {
+    // This is re-set in @lib/preinit
+    const basicFind = (prop: string) => Object.values(window.modules).find(m => m?.publicModule.exports?.[prop])?.publicModule?.exports;
+    window.React = basicFind("createElement") as typeof import("react");
+
     const initNow = window.__pyon_init_now = performance.now();
-    await (await import("./lib/caching")).default();
+    await import("./lib/cacher").then(d => d.default());
+    await import("./playground").then(d => d.default());
 
     await import(".").then((m) => m.default()).catch((e) => {
         console.log(e?.stack ?? e.toString());

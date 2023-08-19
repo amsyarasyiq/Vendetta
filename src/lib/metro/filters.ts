@@ -1,11 +1,11 @@
 import { ModuleCache, PropsFinder, PropsFinderAll } from "@types";
-import { commonName } from "../caching";
+import { commonName } from "@lib/cacher";
 
 // Metro require
 declare const __r: (moduleId: string | number) => any;
 
 const filterModules = (single = false) => (filter: (c: ModuleCache) => any) => {
-    const found = [];
+    const found = new Array<any>;
 
     for (const key in modules) if (modules[key].__pyonCache) {
         const cache = modules[key].__pyonCache as ModuleCache;

@@ -1,7 +1,7 @@
 import { findByProps } from "@metro/filters";
 import { after, before } from "@lib/patcher";
 import { getRenderableScreens, getScreens, getYouData } from "@ui/settings/data";
-import { i18n } from "@/lib/metro/common";
+import { i18n } from "@lib/metro/common";
 
 const settingsListComponents = findByProps("SearchableSettingsList");
 const miscModule = findByProps("SETTING_RELATIONSHIPS", "SETTING_RENDERER_CONFIGS");

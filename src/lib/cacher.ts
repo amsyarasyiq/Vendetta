@@ -1,23 +1,12 @@
-import { ModuleCache } from "@/def";
+import type { MMKVManager, ModuleCache } from "@types";
+import { ClientInfoManager } from "@lib/native";
 
-const MMKVManager = window.nativeModuleProxy.MMKVManager as any;
+const MMKVManager = window.nativeModuleProxy.MMKVManager as MMKVManager;
 
-window.ErrorUtils.setGlobalHandler(() => { });
-
-const metroRequire = (id: any) => {
-    try {
-        return window.__r(id);
-    } catch {
-        return undefined;
-    }
-};
-
-const currentVersion = window.nativeModuleProxy.RTNClientInfoManager.Build;
-
+// Common props/function name that we can consider "useless"
 export const commonName = new Set([
     "__esModule",
     "constructor",
-    "default",
     "initialize",
     "$$typeof",
     "compare",
@@ -33,21 +22,23 @@ export const commonName = new Set([
     ...Reflect.ownKeys(() => void 0)
 ]);
 
+// Massive modules that we probably will never need
 const blacklistedModules = [
     ["heart_eyes", "star_struck", "kissing_heart"],
     ["application/3gpp-ims+xml", "application/a2l"]
 ];
 
+// To prevent multiple modules of the same exports being cached
 const __exports = new Set();
 
-function __cache(obj: any, cache: ModuleCache<string[]>, isDefault = false) {
+function __cache(obj: any, cache: ModuleCache<string[]> = {}, isDefault = false) {
     if (isDefault) {
         // @ts-ignore
         cache = (cache.default) ??= {} as ModuleCache<string[]>;
     }
 
     if (__exports.has(obj)) return;
-    else __exports.add(obj);
+    __exports.add(obj);
 
     for (const blacklistedProps of blacklistedModules) {
         if (blacklistedProps.every(p => p in obj)) return;
@@ -95,6 +86,8 @@ function __cache(obj: any, cache: ModuleCache<string[]>, isDefault = false) {
             }
         }
     }
+
+    return isCacheUseful(cache) ? cache : undefined;
 }
 
 function isNameValid(name: string) {
@@ -119,20 +112,21 @@ function isCacheUseful(cache: ModuleCache<string[]>): boolean {
 }
 
 function createModuleCache(id: string) {
-    const exports = metroRequire(id);
-    const cache = {} as ModuleCache<string[]>;
-
-    if (isValidExports(exports)) {
-        __cache(exports, cache);
+    try {
+        const exports = window.__r(id);        
+        return isValidExports(exports) ? __cache(exports) : undefined;
+    } catch {
+        return undefined;
     }
-
-    return isCacheUseful(cache) ? cache : void 0;
 }
 
 async function cacheAndRestart() {
     console.log("Cache is unavailable or is outdated, caching and restarting!");
+    
+    // To prevent fatal crashes while force loading all modules
+    window.ErrorUtils.setGlobalHandler(() => { });
 
-    const c = { version: currentVersion, assets: {} as any };
+    const c = { version: ClientInfoManager.Build, assets: {} as any };
 
     const assetManager = Object.values(window.modules).find(m => m.publicModule.exports.registerAsset);
     assetManager.publicModule.exports.registerAsset = (asset: { name: string | number }) => {
@@ -141,7 +135,6 @@ async function cacheAndRestart() {
 
     for (const key in window.modules) {
         const cache = createModuleCache(key);
-        // @ts-ignore - AHHHHHHHHHHHHHH
         if (cache != null) c[key] = cache;
     }
     
@@ -158,7 +151,7 @@ async function loadCacheOrRestart() {
     if (loadedCache == null) return void cacheAndRestart();
 
     const parsedCache = JSON.parse(loadedCache);
-    if (parsedCache.version !== currentVersion) {
+    if (parsedCache.version !== ClientInfoManager.Build) {
         return void cacheAndRestart();
     }
 
@@ -169,17 +162,17 @@ async function loadCacheOrRestart() {
 export default () => loadCacheOrRestart().then(cache => {
     window.__pyonModuleCache = cache;
 
-    const makeArrayToSets = (c: any) => {
+    const turnArraysintoSets = (c: any) => {
         for (const k in c) {
             c[k] instanceof Array && (c[k] = new Set(c[k]));
         }
 
-        if (c.default) makeArrayToSets(c.default);
+        if (c.default) turnArraysintoSets(c.default);
     };
 
     for (const key in window.modules) if (cache[key]) {
         window.modules[key].__pyonCache = cache[key];
-        makeArrayToSets(cache[key]);
+        turnArraysintoSets(cache[key]);
     }
 
     return cache;

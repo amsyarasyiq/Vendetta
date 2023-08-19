@@ -56,7 +56,7 @@ export default function General() {
         ...(debugInfo.os.sdk ? [{
             label: "SDK",
             version: debugInfo.os.sdk,
-            icon: "ic_profile_badge_verified_developer_color"
+            icon: "debug"
         }] : []),
         {
             label: "Manufacturer",
