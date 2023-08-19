@@ -162,17 +162,17 @@ async function loadCacheOrRestart() {
 export default () => loadCacheOrRestart().then(cache => {
     window.__pyonModuleCache = cache;
 
-    const turnArraysintoSets = (c: any) => {
+    const turnArraysIntoSets = (c: any) => {
         for (const k in c) {
             c[k] instanceof Array && (c[k] = new Set(c[k]));
         }
 
-        if (c.default) turnArraysintoSets(c.default);
+        if (c.default) turnArraysIntoSets(c.default);
     };
 
     for (const key in window.modules) if (cache[key]) {
         window.modules[key].__pyonCache = cache[key];
-        turnArraysintoSets(cache[key]);
+        turnArraysIntoSets(cache[key]);
     }
 
     return cache;

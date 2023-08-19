@@ -1,5 +1,5 @@
 import { ButtonColors } from "@types";
-import { ReactNative as RN, stylesheet } from "@metro/common";
+import { FluxDispatcher, ReactNative as RN, stylesheet } from "@metro/common";
 import { findByName, findByProps, findByStoreName } from "@metro/filters";
 import { after } from "@lib/patcher";
 import { toggleSafeMode } from "@lib/debug";
@@ -77,9 +77,16 @@ export default () => after("render", ErrorBoundary.prototype, function (this: an
 
     // This is in the patch and not outside of it so that we can use `this`, e.g. for setting state
     const buttons: Button[] = [
-        { text: "Restart Discord", onPress: this.handleReload },
+        { text: "Restart Discord", onPress: () => this.handleReload() },
         ...!settings.safeMode?.enabled ? [{ text: "Restart in Safe Mode", onPress: toggleSafeMode }] : [],
-        { text: "Retry Render", color: ButtonColors.RED, onPress: () => this.setState({ info: null, error: null }) },
+        {
+            text: "Retry Render",
+            color: ButtonColors.RED,
+            onPress: () => {
+                findByProps("hideActionSheet")?.hideActionSheet();
+                this.setState({ info: null, error: null });
+            }
+        },
     ]
 
     return (
