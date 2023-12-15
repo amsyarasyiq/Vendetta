@@ -6,8 +6,7 @@ console.log("Hello from Vendetta!");
 // Polyfill Promise.allSettled
 Promise.allSettled = (values: any) => Promise.all(values).catch();
 
-Object.freeze = Object;
-Object.seal = Object;
+Object.freeze = Object.seal = Object;
 
 const oldDefineProperty = Object.defineProperty;
 // @ts-ignore
