@@ -30,6 +30,7 @@ const blacklistedModules = [
 
 // To prevent multiple modules of the same exports being cached
 const __exports = new Set();
+const __erroredModules = new Array<string>;
 
 function __cache(obj: any, cache: ModuleCache<string[]> = {}, isDefault = false) {
     if (isDefault) {
@@ -91,7 +92,7 @@ function __cache(obj: any, cache: ModuleCache<string[]> = {}, isDefault = false)
 }
 
 function isNameValid(name: string) {
-    return name && name.length > 2 && !commonName.has(name) && isNaN(Number(name));
+    return !!name && name.length > 2 && !commonName.has(name) && isNaN(Number(name));
 }
 
 function isValidExports(exp: any): boolean {
@@ -104,6 +105,7 @@ function isValidExports(exp: any): boolean {
 function isCacheUseful(cache: ModuleCache<string[]>): boolean {
     const isValueMeaningful = (val: string | string[] | ModuleCache<string[]>): any => {
         if (val instanceof Array) return val.filter(s => isValueMeaningful(s)).length > 0;
+        if (typeof val === "function") return true;
         if (typeof val === "string") return val.length > 2;
         if (typeof val === "object") return isCacheUseful(val);
     };
@@ -113,9 +115,10 @@ function isCacheUseful(cache: ModuleCache<string[]>): boolean {
 
 function createModuleCache(id: string) {
     try {
-        const exports = window.__r(id);        
+        const exports = window.__r(id);
         return isValidExports(exports) ? __cache(exports) : undefined;
     } catch {
+        __erroredModules.push(id);
         return undefined;
     }
 }
@@ -126,7 +129,11 @@ async function cacheAndRestart() {
     // To prevent fatal crashes while force loading all modules
     window.ErrorUtils.setGlobalHandler(() => { });
 
-    const c = { version: ClientInfoManager.Build, assets: {} as any };
+    const c = { 
+        version: ClientInfoManager.Build, 
+        assets: {} as any, 
+        erroredModules: null as any
+    };
 
     const assetManager = Object.values(window.modules).find(m => m.publicModule.exports.registerAsset);
     assetManager.publicModule.exports.registerAsset = (asset: { name: string | number }) => {
@@ -135,9 +142,13 @@ async function cacheAndRestart() {
 
     for (const key in window.modules) {
         const cache = createModuleCache(key);
-        if (cache != null) c[key] = cache;
+        if (cache != null) {
+            c[key] = cache;
+        }
     }
-    
+
+    c.erroredModules = __erroredModules;
+
     MMKVManager.removeItem("pyonModuleCache");
     MMKVManager.setItem("pyonModuleCache", JSON.stringify(c));
 
@@ -159,8 +170,19 @@ async function loadCacheOrRestart() {
     return parsedCache;
 }
 
+window.createModuleCache = createModuleCache;
+window.cacheAndRestart = cacheAndRestart;
+
 export default () => loadCacheOrRestart().then(cache => {
     window.__pyonModuleCache = cache;
+
+    cache.erroredModules.forEach(k => {
+        try {
+            cache[k] = createModuleCache(k);
+        } catch {
+            console.log("No chance!", k);
+        }
+    })
 
     const turnArraysIntoSets = (c: any) => {
         for (const k in c) {

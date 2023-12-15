@@ -10,7 +10,7 @@ const colorResolver = findByProps("colors", "meta").meta;
 function createThemedStyleSheet<T extends StyleSheet.NamedStyles<T>>(sheet: T) {
     for (const key in sheet) {
         // @ts-ignore
-        sheet[key] = new Proxy(RN.StyleSheet.flatten(sheet[key]), {
+        sheet[key] = new Proxy(ReactNative.StyleSheet.flatten(sheet[key]), {
             get(target, prop, receiver) { 
                 const res = Reflect.get(target, prop, receiver);
                 return colorResolver.isSemanticColor(res) 
@@ -26,7 +26,7 @@ function createThemedStyleSheet<T extends StyleSheet.NamedStyles<T>>(sheet: T) {
 // Discord
 export const constants = findByProps("Fonts", "Permissions");
 export const channels = findByProps("getVoiceChannelId");
-export const i18n = findByProps("Messages");
+export const i18n = findByProps("Messages", "_getMessages");
 export const url = findByProps("openURL", "openDeeplink");
 export const toasts = findByCache(c => c.props?.has("open") && c.props?.has("close") && c.props?.size === 2);
 

@@ -7,6 +7,20 @@ const settingsListComponents = findByProps("SearchableSettingsList");
 const settingConstantsModule = findByProps("SETTING_RENDERER_CONFIG");
 const gettersModule = findByProps("getSettingListItems");
 
+const isLabel = (i: any, name: string) => i?.label === name || i?.title === name;
+
+function manipulateSections(sections: any[], layout: any) {
+    if (!Array.isArray(sections) || sections.find((i: any) => isLabel(i, "Vendetta"))) return;
+
+    // Add our settings
+    const accountSettingsIndex = sections.findIndex((i: any) => isLabel(i, i18n.Messages.ACCOUNT_SETTINGS));
+    sections.splice(accountSettingsIndex + 1, 0, layout);
+
+    // Upload Logs button be gone
+    const supportCategory = sections.find((i: any) => isLabel(i, i18n.Messages.SUPPORT));
+    if (supportCategory) supportCategory.settings = supportCategory.settings.filter((s: string) => s !== "UPLOAD_DEBUG_LOGS")
+}
+
 export default function patchYou() {
     if (!gettersModule) return () => void 0;
 
@@ -14,18 +28,7 @@ export default function patchYou() {
     const screens = getScreens(true);
     const data = getYouData();
 
-    patches.push(before("type", settingsListComponents.SearchableSettingsList, ([{ sections }]) => {
-        if (sections.markDirty) return;
-        sections.markDirty = true;
-
-        // Add our settings
-        const accountSettingsIndex = sections.findIndex((i: any) => i.label === i18n.Messages.ACCOUNT_SETTINGS);
-        sections.splice(accountSettingsIndex + 1, 0, data.getLayout());
-
-        // Upload Logs button be gone
-        const supportCategory = sections.find((i: any) => i.label === i18n.Messages.SUPPORT);
-        if (supportCategory) supportCategory.settings = supportCategory.settings.filter((s: string) => s !== "UPLOAD_DEBUG_LOGS")
-    }));
+    patches.push(before("type", settingsListComponents.SearchableSettingsList, ([{ sections }]) => manipulateSections(sections, data.getLayout())));
 
     patches.push(after("getSettingListSearchResultItems", gettersModule, (_, ret) => {
         ret.forEach((s: any) => screens.some(b => b.key === s.setting) && (s.breadcrumbs = ["Vendetta"]))
