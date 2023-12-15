@@ -117,8 +117,11 @@ function createModuleCache(id: string) {
     try {
         const exports = window.__r(id);
         return isValidExports(exports) ? __cache(exports) : undefined;
-    } catch {
-        __erroredModules.push(id);
+    } catch (e: any) {
+        // ARGHH
+        if (e?.message === "Cannot read property 'default' of undefined") {
+            __erroredModules.push(id);
+        }
         return undefined;
     }
 }

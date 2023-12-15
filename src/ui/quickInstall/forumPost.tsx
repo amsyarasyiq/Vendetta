@@ -9,7 +9,7 @@ import { showToast } from "@ui/toasts";
 import { Forms } from "@ui/components";
 
 const ForumPostLongPressActionSheet = findByName("ForumPostLongPressActionSheet", false);
-const { FormRow, FormIcon } = Forms;
+const { ActionSheetRow } = findByProps("ActionSheetRow");
 
 const { useFirstForumPostMessage } = findByProps("useFirstForumPostMessage");
 const { hideActionSheet } = findByProps("openLazy", "hideActionSheet");
@@ -48,8 +48,8 @@ export default () => after("default", ForumPostLongPressActionSheet, ([{ thread 
     const ActionsSection = actions[0].type;
 
     actions.unshift(<ActionsSection key="install">
-        <FormRow
-            leading={<FormIcon style={{ opacity: 1 }} source={getAssetIDByName("ic_download_24px")} />}
+        <ActionSheetRow
+            icon={<ActionSheetRow.Icon source={getAssetIDByName("ic_download_24px")} />}
             label={`Install ${postType}`}
             onPress={() =>
                 (postType === "Plugin" ? installPlugin : installTheme)(url).then(() => {
