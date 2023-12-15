@@ -50,6 +50,7 @@ type FnFilter = (m: any) => boolean;
 const findFilter = (filter: FnFilter) => (c: ModuleCache) => {
     const handler: ProxyHandler<any> = {
         get: (_, prop: string) => {
+            if (prop === "name") return c.name;
             if (prop === "default" && c.default && (c = c.default)) return new Proxy({}, handler);
             if (prop === "render") return { name: c.forwardRefName };
             if (prop === "type") return { name: c.memoName };

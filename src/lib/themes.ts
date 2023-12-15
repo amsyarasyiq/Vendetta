@@ -1,5 +1,5 @@
+// Do not depend on "@metro/common" or anything else that depends on it
 import { Theme, ThemeData } from "@types";
-import { ReactNative as RN, chroma } from "@metro/common";
 import { findByName, findByProps } from "@metro/filters";
 import { instead, after } from "@lib/patcher";
 import { createFileBackend, createMMKVBackend, createStorage, wrapSync, awaitSyncWrapper } from "@lib/storage";
@@ -8,8 +8,11 @@ import { safeFetch } from "@lib/utils";
 //! As of 173.10, early-finding this does not work.
 // Somehow, this is late enough, though?
 export const color = findByProps("SemanticColor");
+const RN = findByProps("AppRegistry") as typeof import("react-native");
+const chroma = findByProps("brewer") as typeof import("chroma-js");
 
 export const themes = wrapSync(createStorage<Record<string, Theme>>(createMMKVBackend("VENDETTA_THEMES")));
+
 
 async function writeTheme(theme: Theme | {}) {
     if (typeof theme !== "object") throw new Error("Theme must be an object");
@@ -145,12 +148,7 @@ export async function updateThemes() {
     await Promise.allSettled(Object.keys(themes).map(id => fetchTheme(id, currentTheme?.id === id)));
 }
 
-export async function initThemes() {
-    //! Native code is required here!
-    // Awaiting the sync wrapper is too slow, to the point where semanticColors are not correctly overwritten.
-    // We need a workaround, and it will unfortunately have to be done on the native side.
-    // await awaitSyncWrapper(themes);
-
+async function patchThemes() {
     const selectedTheme = getCurrentTheme();
     if (!selectedTheme) return;
 
@@ -198,4 +196,14 @@ function extractInfo(themeMode: string, colorObj: any): [name: string, colorDef:
     const colorDef = color.SemanticColor[propName];
 
     return [propName, colorDef[themeMode.toLowerCase()]];
+}
+
+export default () => {
+    if (window.__vendetta_loader?.features.themes) {
+        try {
+            patchThemes();
+        } catch (e) {
+            console.error("[Vendetta] Failed to initialize themes", e);
+        }
+    }
 }

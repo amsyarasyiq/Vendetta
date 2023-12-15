@@ -7,13 +7,10 @@ import { showToast } from "@ui/toasts";
 import { without } from "@lib/utils";
 import { getAssetIDByName } from "@ui/assets";
 import settings from "@lib/settings";
-import ErrorBoundary from "@ui/components/ErrorBoundary";
-import InstallButton from "@ui/settings/components/InstallButton";
-import General from "@ui/settings/pages/General";
-import Plugins from "@ui/settings/pages/Plugins";
-import Themes from "@ui/settings/pages/Themes";
-import Developer from "@ui/settings/pages/Developer";
 import { PROXY_PREFIX } from "@lib/constants";
+
+const ErrorBoundary = React.lazy(() => import("@ui/components/ErrorBoundary"));
+const InstallButton = React.lazy(() => import("@ui/settings/components/InstallButton"))
 
 interface Screen {
     [index: string]: any;
@@ -37,7 +34,7 @@ export const getScreens = (youKeys = false): Screen[] => [
         key: formatKey("VendettaSettings", youKeys),
         title: "General",
         icon: "settings",
-        render: General,
+        render: React.lazy(() => import("@ui/settings/pages/General")),
     },
     {
         key: formatKey("VendettaPlugins", youKeys),
@@ -64,7 +61,7 @@ export const getScreens = (youKeys = false): Screen[] => [
                 />
             ),
         },
-        render: Plugins,
+        render: React.lazy(() => import("@ui/settings/pages/Plugins")),
     },
     {
         key: formatKey("VendettaThemes", youKeys),
@@ -75,14 +72,14 @@ export const getScreens = (youKeys = false): Screen[] => [
         options: {
             headerRight: () => !settings.safeMode?.enabled && <InstallButton alertTitle="Install Theme" installFunction={installTheme} />,
         },
-        render: Themes,
+        render: React.lazy(() => import("@ui/settings/pages/Themes")),
     },
     {
         key: formatKey("VendettaDeveloper", youKeys),
         title: "Developer",
         icon: "ic_progress_wrench_24px",
         shouldRender: () => settings.developerSettings ?? false,
-        render: Developer,
+        render: React.lazy(() => import("@ui/settings/pages/Developer")),
     },
     {
         key: formatKey("VendettaCustomPage", youKeys),
@@ -91,9 +88,12 @@ export const getScreens = (youKeys = false): Screen[] => [
         render: ({ render: PageView, noErrorBoundary, ...options }: { render: React.ComponentType; noErrorBoundary: boolean } & Record<string, object>) => {
             const navigation = NavigationNative.useNavigation();
 
-            navigation.addListener("focus", () => navigation.setOptions(without(options, "render", "noErrorBoundary")));
+            React.useEffect(() => {
+                navigation.setOptions(without(options, "render", "noErrorBoundary"));
+            }, []);
+
             return noErrorBoundary ? <PageView /> : <ErrorBoundary><PageView /></ErrorBoundary>
-        },
+        }
     },
 ];
 
@@ -101,7 +101,7 @@ export const getRenderableScreens = (youKeys = false) => getScreens(youKeys).fil
 
 export const getPanelsScreens = () => keyMap(getScreens(), (s) => ({
     title: s.title,
-    render: s.render,
+    render: p => <s.render {...p} />,
     ...s.options,
 }));
 
@@ -110,7 +110,7 @@ export const getYouData = () => {
 
     return {
         getLayout: () => ({
-            title: "Vendetta",
+            label: "Vendetta",
             // We can't use our keyMap function here since `settings` is an array not an object
             settings: getRenderableScreens(true).map(s => s.key)
         }),
@@ -125,6 +125,7 @@ export const getYouData = () => {
             return {
                 type: "route",
                 icon: s.icon ? getAssetIDByName(s.icon) : null,
+                title: () => s.title,
                 screen: {
                     // TODO: This is bad, we should not re-convert the key casing
                     // For some context, just using the key here would make the route key be VENDETTA_CUSTOM_PAGE in you tab, which breaks compat with panels UI navigation

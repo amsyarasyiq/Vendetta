@@ -31,7 +31,7 @@ export default async (unloads: any[]): Promise<VendettaObject> => ({
         ...color,
     },
     plugins: utils.without(plugins, "initPlugins", "evalPlugin"),
-    themes: utils.without(themes, "initThemes"),
+    themes: utils.without(themes, "default"),
     commands: utils.without(commands, "patchCommands"),
     storage,
     settings,

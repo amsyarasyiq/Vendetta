@@ -5,6 +5,7 @@ import { argv } from "process";
 
 const flags = argv.slice(2).filter(arg => arg.startsWith("--")).map(arg => arg.slice(2));
 const isDev = !flags.includes("release");
+const minify = flags.includes("minify");
 
 const commitHash = execSync("git rev-parse --short HEAD").toString().trim();
 console.log(`Building with commit hash ${commitHash}, isDev=${isDev}`);
@@ -36,7 +37,7 @@ const swcPlugin = {
 await esbuild.build({
     entryPoints: ["src/entry.ts"],
     bundle: true,
-    minify: !isDev,
+    minify: !isDev || minify,
     format: "iife",
     target: "esnext",
     outfile: buildOutput,
@@ -45,7 +46,7 @@ await esbuild.build({
     },
     define: {
         __vendettaIsDev: JSON.stringify(isDev),
-        __vendettaVersion: JSON.stringify(commitHash)
+        __vendettaVersion: JSON.stringify(isDev ? "(local)" : commitHash)
     },
     legalComments: "none",
     alias: {

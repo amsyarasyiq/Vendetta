@@ -11,7 +11,14 @@ export const HelpMessage = findByName("HelpMessage");
 export const SafeAreaView = findByProps("useSafeAreaInsets").SafeAreaView as typeof RN.SafeAreaView;
 
 // Vendetta
-export { default as Summary } from "@ui/components/Summary";
+// export const ErrorBoundary = React.lazy(() => import("@ui/components/ErrorBoundary"));
+// export const Summary = React.lazy(() => import("@ui/components/Summary"));
+// export const Codeblock = React.lazy(() => import("@ui/components/Codeblock"));
+// export const Search = React.lazy(() => import("@ui/components/Search"));
+
 export { default as ErrorBoundary } from "@ui/components/ErrorBoundary";
+export { default as Summary } from "@ui/components/Summary";
+
 export { default as Codeblock } from "@ui/components/Codeblock";
+
 export { default as Search } from "@ui/components/Search";

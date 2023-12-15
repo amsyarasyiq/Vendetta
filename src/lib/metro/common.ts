@@ -22,13 +22,13 @@ export const FluxDispatcher = findByProps("_currentDispatchActionType");
 
 // React
 export const React = window.React as typeof import("react");
-export { ReactNative } from "@lib/preinit";
+export const ReactNative = findByProps("AppRegistry") as typeof import("react-native");
 
 // Moment
 export const moment = findByProps("isMoment") as typeof import("moment");
 
 // chroma.js
-export { chroma } from "@lib/preinit";
+export const chroma = findByProps("brewer") as typeof import("chroma-js");
 
 // Lodash
 export const lodash = findByProps("forEachRight") as typeof import("lodash");

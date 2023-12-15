@@ -8,7 +8,6 @@ import initSafeMode from "@ui/safeMode";
 import initSettings from "@ui/settings";
 import initFixes from "@lib/fixes";
 import logger from "@lib/logger";
-import windowObject from "@lib/windowObject";
 
 export default async () => {
     console.log(`Vendetta bundle loaded in ${performance.now() - window.__pyon_init_now}ms`);
@@ -26,7 +25,7 @@ export default async () => {
     ]);
 
     // Assign window object
-    window.vendetta = await windowObject(unloads);
+    window.vendetta = await import("@lib/windowObject").then(m => m.default(unloads));
 
     // Once done, load plugins
     unloads.push(await initPlugins());

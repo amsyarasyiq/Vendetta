@@ -101,7 +101,6 @@ export function wrapSync<T extends Promise<any>>(store: T): Awaited<T> {
     return new Proxy({} as Awaited<T>, {
         ...Object.fromEntries(
             Object.getOwnPropertyNames(Reflect)
-                // @ts-expect-error
                 .map((k) => [k, (t: T, ...a: any[]) => Reflect[k](awaited ?? t, ...a)])
         ),
         get(target, prop, recv) {
